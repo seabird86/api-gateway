@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active:
+      - jdbc
+      - default
+  config:
+    import: "optional:configserver:http://ANHNT:ANHNT-PASS@localhost:7000/configuration/config"

@@ -1,16 +1,20 @@
 package com.anhnt.apigateway.filter;
 
-import com.anhnt.common.domain.apigateway.response.ErrorEntityConstant;
+import com.anhnt.common.domain.response.ErrorFactory.ApiGatewayError;
 import com.anhnt.common.domain.exception.InvalidRequestException;
+import com.anhnt.common.utils.RSAUtil;
 import lombok.SneakyThrows;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Component
 public class SignatureFilter implements GlobalFilter, Ordered {
@@ -25,25 +29,26 @@ public class SignatureFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
+        String lang = exchange.getLocaleContext().getLocale().getLanguage();
         HttpHeaders headers = request.getHeaders();
         if (headers.getFirst(CLIENT_ID)==null){
-            throw new InvalidRequestException(ErrorEntityConstant.HEADER_REQUIRED.withParams(CLIENT_ID));
+            throw new InvalidRequestException(ApiGatewayError.HEADER_REQUIRED.apply(lang, List.of(CLIENT_ID)));
         }
         if (headers.getFirst(CLIENT_ID).equalsIgnoreCase("ANH")){
             return chain.filter(exchange);
         }
         if (headers.getFirst(SIGNATURE)==null){
-            throw new InvalidRequestException(ErrorEntityConstant.HEADER_REQUIRED.withParams(SIGNATURE));
+            throw new InvalidRequestException(ApiGatewayError.HEADER_REQUIRED.apply(lang, List.of(SIGNATURE)));
         }
         if (headers.getFirst(TIMESTAMP)==null){
-            throw new InvalidRequestException(ErrorEntityConstant.HEADER_REQUIRED.withParams(TIMESTAMP));
+            throw new InvalidRequestException(ApiGatewayError.HEADER_REQUIRED.apply(lang, List.of(TIMESTAMP)));
         }
-//        String body = exchange.getAttribute(ServerWebExchangeUtils.CACHED_REQUEST_BODY_ATTR);
-//        String content = new StringBuilder(exchange.getRequest().getMethodValue()).append(headers.getFirst(TIMESTAMP))
-//                .append(headers.getFirst(CLIENT_ID)).append(headers).append(body).toString();
-//        if (RSAUtil.verify(content, headers.getFirst(SIGNATURE),RSAUtil.toPublicKey(PUBLIC_KEY))){
-//            throw new InvalidRequestException(ResponseErrorConstant.INVALID_SIGNATURE);
-//        }
+        String body = exchange.getAttribute(ServerWebExchangeUtils.CACHED_REQUEST_BODY_ATTR);
+        String content = new StringBuilder(exchange.getRequest().getMethodValue()).append(headers.getFirst(TIMESTAMP))
+                .append(headers.getFirst(CLIENT_ID)).append(headers).append(body).toString();
+        if (RSAUtil.verify(content, headers.getFirst(SIGNATURE), RSAUtil.toPublicKey(PUBLIC_KEY))){
+            throw new InvalidRequestException(ApiGatewayError.INVALID_SIGNATURE.apply(lang, null));
+        }
         return chain.filter(exchange);
     }
 

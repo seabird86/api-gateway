@@ -1,6 +1,6 @@
 package com.anhnt.apigateway.configuration;
 
-import com.anhnt.common.domain.apigateway.response.ErrorEntityConstant;
+import com.anhnt.common.domain.response.ErrorFactory.ApiGatewayError;
 import com.anhnt.common.domain.exception.AbstractException;
 import org.springframework.boot.autoconfigure.web.WebProperties;
 import org.springframework.boot.autoconfigure.web.reactive.error.AbstractErrorWebExceptionHandler;
@@ -18,6 +18,9 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+import java.util.Locale;
+
 @Component
 @Order(-2)
 public class AppExceptionHandler extends AbstractErrorWebExceptionHandler {
@@ -33,12 +36,14 @@ public class AppExceptionHandler extends AbstractErrorWebExceptionHandler {
     }
 
     private Mono<ServerResponse> toErrorResponse (ServerRequest request) {
+        Locale locale = request.exchange().getLocaleContext().getLocale();
+        String lang = locale == null ? null: locale.getLanguage();
         Throwable throwable = getError(request);
         if (throwable instanceof AbstractException){
             return ServerResponse.status(((AbstractException) throwable).getError().getStatus())
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(((AbstractException) throwable).getError().toResponseEntity().getBody());
         }
         return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .contentType(MediaType.APPLICATION_JSON).bodyValue(ErrorEntityConstant.INTERNAL_SERVER_ERROR.withParams(throwable.getMessage()).toResponseEntity().getBody());
+                    .contentType(MediaType.APPLICATION_JSON).bodyValue(ApiGatewayError.INTERNAL_SERVER_ERROR.apply(lang,List.of(throwable.getMessage())).toResponseEntity().getBody());
     }
 }

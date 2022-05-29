@@ -40,12 +40,27 @@ curl --location --request GET 'http://localhost:8024/actuator/gateway/globalfilt
 curl --location --request GET 'http://localhost:8024/actuator/gateway/routefilters'
 ```
 
-### 2.Creating and Deleting a Particular Route
+### 2. Creating and Deleting a Particular Route
 
 ```
 POST: /gateway/routes/{id_route_to_create}
 DELETE: /gateway/routes/{id_route_to_create}
 ```
 
+### 3. Ordering
+
+* **Order Number generated:**
+	- GlobalFilter based on method Order
+	- Default GatewayFilter from 1 -> N
+	- Normal GatewayFilter from 1 -> N
+* **Execution Order**
+
+	- Different Order: smaller order will process earlier
+	- Same order
+		+ GlobalFilters are ordered by file name (ABC) (scanning)
+		+ GlobalFilter priority (First)> Default GatewayFilter (Second) > Normal Gateway Filter (Third)
+
+
 
 [https://www.baeldung.com/java-digital-signature](https://www.baeldung.com/java-digital-signature)
+[Ordering](https://www.codetd.com/en/article/13091284)

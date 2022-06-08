@@ -1,5 +1,6 @@
 package com.anhnt.apigateway.filter;
 
+import com.anhnt.apigateway.constant.HeaderConstant;
 import com.anhnt.common.domain.response.ErrorFactory.ApiGatewayError;
 import com.anhnt.common.domain.exception.InvalidRequestException;
 import com.anhnt.common.utils.RSAUtil;
@@ -15,45 +16,44 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Locale;
 
 @Component
 public class SignatureFilter implements GlobalFilter, Ordered {
 
-    public static final String SIGNATURE = "Signature";
-    public static final String CLIENT_ID = "Client-ID";
-    public static final String TIMESTAMP = "timestamp";
-    private static final String PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCCO8gCZIZ7QXlgowYlCmmAVor2mjHMcTK9mv6DxJaRs/6ttakhmLJmHKdR66JQsgYfqyVUbpvs1ij1iHQABPWJB9M8HIl7v1lMMCp5ziUZl9+5N/ocXe/xIZzWpoj5GMgJpvVrGJ7KZ9rXFgJCRIQKXNj3ZjQGvIprXXsb424I7wIDAQAB\n-----END PUBLIC KEY-----";
 
+    private static final String PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCCO8gCZIZ7QXlgowYlCmmAVor2mjHMcTK9mv6DxJaRs/6ttakhmLJmHKdR66JQsgYfqyVUbpvs1ij1iHQABPWJB9M8HIl7v1lMMCp5ziUZl9+5N/ocXe/xIZzWpoj5GMgJpvVrGJ7KZ9rXFgJCRIQKXNj3ZjQGvIprXXsb424I7wIDAQAB\n-----END PUBLIC KEY-----";
 
     @SneakyThrows
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        String lang = exchange.getLocaleContext().getLocale().getLanguage();
+        Locale locale = exchange.getLocaleContext().getLocale();
+        String lang = locale == null ? null: locale.getLanguage();
         HttpHeaders headers = request.getHeaders();
-        if (headers.getFirst(CLIENT_ID)==null){
-            throw new InvalidRequestException(ApiGatewayError.HEADER_REQUIRED.apply(lang, List.of(CLIENT_ID)));
+        if (headers.getFirst(HeaderConstant.CLIENT_ID)==null){
+            return Mono.error(new InvalidRequestException(ApiGatewayError.HEADER_REQUIRED.apply(lang, List.of(HeaderConstant.CLIENT_ID))));
         }
-        if (headers.getFirst(CLIENT_ID).equalsIgnoreCase("ANH")){
+        if (headers.getFirst(HeaderConstant.CLIENT_ID).equalsIgnoreCase("ANH")){
             return chain.filter(exchange);
         }
-        if (headers.getFirst(SIGNATURE)==null){
-            throw new InvalidRequestException(ApiGatewayError.HEADER_REQUIRED.apply(lang, List.of(SIGNATURE)));
+        if (headers.getFirst(HeaderConstant.SIGNATURE)==null){
+            return Mono.error(new InvalidRequestException(ApiGatewayError.HEADER_REQUIRED.apply(lang, List.of(HeaderConstant.SIGNATURE))));
         }
-        if (headers.getFirst(TIMESTAMP)==null){
-            throw new InvalidRequestException(ApiGatewayError.HEADER_REQUIRED.apply(lang, List.of(TIMESTAMP)));
+        if (headers.getFirst(HeaderConstant.TIMESTAMP)==null){
+            return Mono.error(new InvalidRequestException(ApiGatewayError.HEADER_REQUIRED.apply(lang, List.of(HeaderConstant.TIMESTAMP))));
         }
         String body = exchange.getAttribute(ServerWebExchangeUtils.CACHED_REQUEST_BODY_ATTR);
-        String content = new StringBuilder(exchange.getRequest().getMethodValue()).append(headers.getFirst(TIMESTAMP))
-                .append(headers.getFirst(CLIENT_ID)).append(headers).append(body).toString();
-        if (RSAUtil.verify(content, headers.getFirst(SIGNATURE), RSAUtil.toPublicKey(PUBLIC_KEY))){
-            throw new InvalidRequestException(ApiGatewayError.INVALID_SIGNATURE.apply(lang, null));
+        String content = new StringBuilder(exchange.getRequest().getMethodValue()).append(headers.getFirst(HeaderConstant.TIMESTAMP))
+                .append(headers.getFirst(HeaderConstant.CLIENT_ID)).append(headers).append(body).toString();
+        if (RSAUtil.verify(content, headers.getFirst(HeaderConstant.SIGNATURE), RSAUtil.toPublicKey(PUBLIC_KEY))){
+            return Mono.error(new InvalidRequestException(ApiGatewayError.INVALID_SIGNATURE.apply(lang, null)));
         }
         return chain.filter(exchange);
     }
 
     @Override
     public int getOrder() {
-        return 2;
+        return -2;
     }
 }

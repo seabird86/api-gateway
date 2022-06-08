@@ -1,5 +1,18 @@
 # API-GATEWAY
 
+
+* brew install redis
+* vi /usr/local/etc/redis-sentinel.conf
+* vi /usr/local/etc/redis.conf
+
+
+* Start with: $>redis-server /usr/local/etc/redis.conf
+* Start sentinel $>redis-server /usr/local/etc/redis-sentinel.conf --sentinel
+
+* redis-cli -p 26379
+* SENTINEL get-master-addr-by-name mymaster
+* sentinel masters
+
 ### 1 Glossary
 
 * **Route**: It is defined by an ID, a destination URI, a collection of predicates, and a collection of filters.

@@ -5,6 +5,7 @@ import com.anhnt.common.domain.configuration.response.Message;
 import com.anhnt.common.domain.response.ConfigurationCache;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.autoconfigure.web.WebProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

@@ -12,6 +12,14 @@
 * redis-cli -p 26379
 * SENTINEL get-master-addr-by-name mymaster
 * sentinel masters
+* dbsize
+* info memory
+
+
+* redis-benchmark -h localhost -p 6379 -q -n 1000 -a password
+
+* npm install -g redis-commander
+* redis-commander --redis-password=password
 
 ### 1 Glossary
 
